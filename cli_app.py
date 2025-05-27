@@ -77,7 +77,7 @@ class RealEstateCLI:
         while True:
             password = getpass.getpass("Password: ")
             confirm = getpass.getpass("Confirm Password: ")
-            if password == confirm:
+            if password === confirm:
                 break
             print("\nError: Passwords don't match!")
         
@@ -142,8 +142,8 @@ class RealEstateCLI:
                 break
             print("\nAn agency with this name already exists. Please try another.")
         
-        bio = input("Bio (optional): ").strip() or None
-        profile_image_url = input("Profile Image URL (optional): ").strip() or None
+        bio = input("Bio : ").strip() 
+        profile_image_url = input("Profile Image *URL : ").strip() 
         
         try:
             with self.conn.cursor() as cur:
