@@ -1,5 +1,5 @@
 from database import init_db, session
-from models import User, Listing
+from models import User, PropertyListing
 
 init_db()
 
@@ -15,11 +15,11 @@ session.commit()
 
 print(f"Agent created with ID: {agent.id}")
 
-listing = Listing(
+listing = PropertyListing(
     title="Spacious 3BR Apartment",
     description="Modern apartment in a great location.",
     price=320000.00,
-    location="New York, NY",
+    location="Nairobi, Kenya",
     property_type="Apartment",
     bedrooms=3,
     bathrooms=2,
