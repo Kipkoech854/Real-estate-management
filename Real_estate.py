@@ -6,4 +6,11 @@ if __name__ == '__Real_estate__':
 
 
 #property listing
- 
+ from sqlalchemy import (
+     Column, String, Integer, ForeignKey, DateTime, Boolean
+ )
+from sqlalchemy.orm import relationship, declarative base
+from sqlalchemy.sql import func
+
+Base = declarative_base()
+
