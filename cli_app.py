@@ -77,7 +77,7 @@ class RealEstateCLI:
         while True:
             password = getpass.getpass("Password: ")
             confirm = getpass.getpass("Confirm Password: ")
-            if password === confirm:
+            if password == confirm:
                 break
             print("\nError: Passwords don't match!")
         
