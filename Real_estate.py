@@ -6,64 +6,27 @@ if __name__ == '__Real_estate__':
 
 
 #property listing
-from sqlalchemy import (
-     Column, String, Integer, ForeignKey, DateTime, Boolean
- )
-from sqlalchemy.orm import relationship, declarative_base
-from sqlalchemy.sql import func
+from database import init_db, session
+from models import User, Listing
 
-Base = declarative_base()
+init_db()
 
-class User(Base):
-    __tablename__ = 'users'
-    
-    id = Column(String, primary_key=True)
-    username = Column(String, unique=True, nullable=False)
-    email = Column(String, unique=True, nullable=False)
-    phone = Column(String, unique=True, nullable=True)
-    password_hash = Column(String, nullable=False)
-    is_agent = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    agency = relationship("Agency", back_populates="users", uselist=False)
-    listings = relationship("PropertyListing", back_populates="user")
+agent = User(username="agent_smith", email="smith@agency.com", phone="1234567890", password_hash="hashed_pw", is_agent=True)
+session.add(agent)
+session.commit()
 
-class Agency(Base):
-    __tablename__ = 'agencies'
-    
-    id = Column(String, primary_key=True)
-    name = Column(String, nullable=False)
-    license_no = Column(String, unique=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    users = relationship("User", back_populates="agency")
+listing = Listing(
+    title="Modern 2BR Apartment",
+    description="Spacious apartment in downtown.",
+    price=250000.00,
+    location="New York, NY",
+    property_type="Apartment",
+    bedrooms=2,
+    bathrooms=2,
+    sq_ft=900,
+    user_id=agent.id
+)
+session.add(listing)
+session.commit()
 
-    users = relationship("User", back_populates="agency")
-    agency_chat = relationship("AgencyChat", back_populates="agency")
-
-class listing(Base):
-    __tablename__ = 'property_listings'
-    
-    id = Column(Integer, primary_key=True)
-    title = Column(String, nullable=False)
-    description = Column(Text)
-    price = Column(Float, nullable=False)
-    location = Column(String)
-    property_type = Column(String)
-    bedrooms = Column(Integer)
-    bathrooms = Column(Integer)
-    sq_ft = Column(Float)
-    created_at = Column(DateTime, default=func.now())
-    user_id = Column(Integer, ForeignKey('users.id'))
-
-    user = relationship("User", back_populates="listings")
-    media = relationship("Media", back_populates="listing")
-    reviews = relationship("Review", back_populates="listing")
-
-class Media(Base):
-    __tablename__ = 'media'
-
-    id = Column(Integer, primary_key=True)
-    url = Column(String, nullable=False)
-    type = Column(String)
-    listing_id = Column(Integer, ForeignKey('listings.id'))
-
-    listing = relationship("Listing", back_populates="media")
+print("Listing added successfully!")
