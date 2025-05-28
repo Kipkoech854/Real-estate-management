@@ -7,7 +7,7 @@ import uuid
 from dotenv import load_dotenv
 import random
 import string
-from agents_perfomance import FeedbackSystem
+import json
 
 load_dotenv()
 
@@ -222,12 +222,20 @@ class RealEstateCLI:
             
             if choice == "5":
                 break
-            elif choice in ["1", "2", "3"]:
+            elif choice in ["1", "2"]:
                 print("\nFeature coming soon!")
+            elif choice =="3":
+                self.get_chat_messages()
             elif choice == "4":
                 FeedbackSystem.self.review_menu()    
             else:
                 print("Invalid option. Please try again.")
+
+    
+
+           
+
+
 
     def run(self):
         """Main application loop"""
@@ -253,60 +261,6 @@ class RealEstateCLI:
         self.conn.close()
         print("\nGoodbye!")
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
