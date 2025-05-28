@@ -17,9 +17,28 @@ class ListingManager:
             sslmode="require"
         )
 
+    def create_user(self, username, email, password_hash, phone=None, is_agent=False):
+        try:
+            with self.conn.cursor() as cur:
+                user_id = str(uuid.uuid4())
+                cur.execute(
+                    """
+                    INSERT INTO users (id, username, email, password_hash, phone, is_agent, created_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id;
+                    """,
+                    (user_id, username, email, password_hash, phone, is_agent, datetime.utcnow())
+                )
+                self.conn.commit()
+                print(f"User created with ID: {user_id}")
+                return user_id
+        except psycopg2.Error as e:
+            self.conn.rollback()
+            print(f"User Creation Error: {e}")
+            return None
+
     def create_listing(self, user_id, title, description, price, property_type,
                        bedrooms, bathrooms, square_feet, address, location):
-        """Add a new property listing"""
         try:
             with self.conn.cursor() as cur:
                 cur.execute(
@@ -47,7 +66,6 @@ class ListingManager:
             return None
 
     def get_all_listings(self):
-        """Retrieve and display all active listings"""
         try:
             with self.conn.cursor() as cur:
                 cur.execute("SELECT id, title, price, property_type, status FROM listings WHERE status = 'active'")
@@ -63,22 +81,36 @@ class ListingManager:
     def close(self):
         self.conn.close()
 
+
 if __name__ == "__main__":
     manager = ListingManager()
 
-    manager.create_listing(
-        user_id=example_user_id,
-        title="Modern Downtown Apartment",
-        description="2 bed, 1.5 bath near Embarcadero with great amenities.",
-        price=4500.00,
-        property_type="apartment",
-        bedrooms=2,
-        bathrooms=1.5,
-        square_feet=950,
-        address=example_address,
-        location=example_location
+    user_id = manager.create_user(
+        username="exampleuser",
+        email="example@example.com",
+        password_hash="hashed_password_here",
+        phone="555-1234",
+        is_agent=False
     )
 
-    manager.get_all_listings()
+    if user_id:
+        manager.create_listing(
+            user_id=user_id,
+            title="Modern Downtown Apartment",
+            description="2 bed, 1.5 bath near Embarcadero with great amenities.",
+            price=4500.00,
+            property_type="apartment",
+            bedrooms=2,
+            bathrooms=1.5,
+            square_feet=950,
+            address={
+                "street": "123 Market St",
+                "city": "Nairobi",
+                "county": "Nairobi"
+            },
+            location={"lat": 37.7955, "lng": -122.3937}
+        )
+
+        manager.get_all_listings()
 
     manager.close()
