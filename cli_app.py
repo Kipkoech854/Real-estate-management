@@ -7,6 +7,7 @@ import uuid
 from dotenv import load_dotenv
 import random
 import string
+from agents_perfomance import FeedbackSystem
 
 load_dotenv()
 
@@ -213,14 +214,18 @@ class RealEstateCLI:
             print("1. Make New Listing")
             print("2. View Existing Listings")
             print("3. Open Chat")
-            print("4. Back to Home")
+            print("4. Open reviews")
+            print("5. Back to Home")
+
             
             choice = input("Select option: ").strip()
             
-            if choice == "4":
+            if choice == "5":
                 break
             elif choice in ["1", "2", "3"]:
                 print("\nFeature coming soon!")
+            elif choice == "4":
+                FeedbackSystem.self.review_menu()    
             else:
                 print("Invalid option. Please try again.")
 
@@ -247,6 +252,63 @@ class RealEstateCLI:
         
         self.conn.close()
         print("\nGoodbye!")
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == "__main__":
     app = RealEstateCLI()
