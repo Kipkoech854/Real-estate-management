@@ -12,7 +12,6 @@ import json
 
 
 
-load_dotenv()
 
 class RealEstateCLI:
     def __init__(self):
@@ -335,9 +334,20 @@ class RealEstateCLI:
             elif choice == "2":
                 print("\nFeature coming soon!")
             elif choice == "3":
-                self.get_chat_messages()
+                try:
+                    from chatsystem import ChatSystem  
+                    chat_app = ChatSystem(self.conn, self.current_user_id)
+                    chat_app.cli_interface()  
+                except Exception as e:
+                    print(f"Failed to launch chat system: {e}")
             elif choice == "4":
-                FeedbackSystem.self.review_menu()    
+                try:
+                    from feedbck_system import FeedbackSystem
+                    feedback_cli = FeedbackSystem(self.current_user_id)
+                    feedback_cli.review_menu()
+                except Exception as e:
+                    print(f"Failed to launch feedback system: {e}")
+
             else:
                 print("Invalid option. Please try again.")
 
@@ -394,6 +404,14 @@ class RealEstateCLI:
         self.conn.close()
         print("\nGoodbye!")
     
+
+
+
+
+
+
+
+
 
 
 
