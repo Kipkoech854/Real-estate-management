@@ -9,6 +9,9 @@ import random
 import string
 import json
 
+
+
+
 load_dotenv()
 
 class RealEstateCLI:
@@ -197,7 +200,10 @@ class RealEstateCLI:
                     self.agency_menu()
                 else:
                     self.register_agency()
-            elif choice in ["2", "3", "4"]:
+            elif choice == "2":
+                self.get_all_listings()
+
+            elif choice in ["3", "4"]:
                 print("\nFeature coming soon!")
             elif choice == "5":
                 self.current_user = None
@@ -206,6 +212,47 @@ class RealEstateCLI:
                 break
             else:
                 print("Invalid option. Please try again.")
+
+
+    def create_listing(self, user_id , title, description, price, property_type, bedrooms, bathrooms, square_feet, address, location):
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO listings (
+                        id, user_id, title, description, price, property_type, 
+                        bedrooms, bathrooms, square_feet, address, location, created_at, updated_at
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, ST_GeogFromText(%s), %s, %s)
+                    RETURNING id;
+                    """,
+                    (
+                        str(uuid.uuid4()), user_id, title, description, price, property_type,
+                        bedrooms, bathrooms, square_feet, json.dumps(address),
+                        location,
+                        datetime.utcnow(), datetime.utcnow()
+                    )
+                )
+                listing_id = cur.fetchone()[0]
+                self.conn.commit()
+                print(f"\nListing created with ID: {listing_id}")
+                return listing_id
+        except psycopg2.Error as e:
+            self.conn.rollback()
+            print(f"\nDatabase Error: {e}")
+            return None
+
+    def get_all_listings(self):
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute("SELECT id, title, price, property_type, status FROM listings WHERE status = 'active'")
+                listings = cur.fetchall()
+                print("\n=== Active Listings ===")
+                for l in listings:
+                    print(f"ID: {l[0]} | Title: {l[1]} | Price: ${l[2]} | Type: {l[3]} | Status: {l[4]}")
+                return listings
+        except psycopg2.Error as e:
+            print(f"\nDatabase Error: {e}")
+            return []        
 
     def agency_menu(self):
         """Display agency menu"""
@@ -217,23 +264,109 @@ class RealEstateCLI:
             print("4. Open reviews")
             print("5. Back to Home")
 
-            
             choice = input("Select option: ").strip()
-            
+        
             if choice == "5":
                 break
-            elif choice in ["1", "2"]:
+            elif choice == "1":
+                print("\n=== create listing ===")
+                title = input("Title (required): ").strip()
+                if not title:
+                    print('Title must be filled!')
+                    continue
+                
+                description = input("Description: ").strip() or None
+                price = input("Price (optional): ").strip() or None
+                if price:
+                    try:
+                        price = float(price)
+                    except ValueError:
+                        print("Invalid price - must be a number")
+                        continue
+                    
+                property_type = input("Property type [house/apartment/land/commercial]: ").strip().lower()
+                if property_type not in ['house', 'apartment', 'land', 'commercial']:
+                    print("Invalid property type")
+                    continue
+                
+                bedrooms = input("Bedrooms: ").strip()
+                try:
+                    bedrooms = int(bedrooms) if bedrooms else None
+                except ValueError:
+                    print("Bedrooms must be a whole number")
+                    continue
+                
+                bathrooms = input("Bathrooms: ").strip()
+                try:
+                    bathrooms = float(bathrooms) if bathrooms else None
+                except ValueError:
+                    print("Bathrooms must be a number")
+                    continue
+                
+                square_feet = input("Square feet: ").strip()
+                try:
+                    square_feet = int(square_feet) if square_feet else None
+                except ValueError:
+                    print("Square feet must be a whole number")
+                    continue
+                
+                address = self.get_address_input()  # Make sure this method exists
+                location = self.get_location_input() 
+            
+                confirm = input("Create this listing? (y/n): ").lower()
+                if confirm == 'y':
+                    listing_id = self.create_listing(
+                    user_id=self.current_user_id,  
+                    title=title,
+                    description=description,
+                    price=price,
+                    property_type=property_type,
+                    bedrooms=bedrooms,
+                    bathrooms=bathrooms,
+                    square_feet=square_feet,
+                    address=address,
+                    location=location
+                )
+                if listing_id:
+                    print("Listing created successfully!")
+                else:
+                    print("Listing creation cancelled")
+
+            elif choice == "2":
                 print("\nFeature coming soon!")
-            elif choice =="3":
+            elif choice == "3":
                 self.get_chat_messages()
             elif choice == "4":
                 FeedbackSystem.self.review_menu()    
             else:
                 print("Invalid option. Please try again.")
 
-    
 
-           
+    def get_location_input(self):
+        """Helper method to get location coordinates"""
+        while True:
+            coords = input("Enter coordinates as 'latitude,longitude' (optional): ").strip()
+            if not coords:
+                return None
+        try:
+            lat, lng = map(float, coords.split(','))
+            return {'lat': lat, 'lng': lng}
+        except ValueError:
+            print("Invalid format. Please enter like: -1.286389,36.817223")
+
+    def get_address_input(self):
+        print("Please enter the property address:")
+        street = input("Street: ").strip()
+        city = input("City: ").strip()
+        county = input("County: ").strip()
+    
+        address = {
+            "street": street if street else None,
+            "city": city if city else None,
+            "county": county if county else None
+    }
+    
+        return address        
 
 
 
