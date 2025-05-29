@@ -8,7 +8,8 @@ from dotenv import load_dotenv
 import random
 import string
 import json
-
+from Real_estate import ListingManager
+from explorer import Explorer
 
 
 
@@ -190,7 +191,8 @@ class RealEstateCLI:
             print("2. See Listings")
             print("3. Open Ratings")
             print("4. Open Explorer")
-            print("5. Logout")
+            print("5. Display user details")
+            print("6. Logout")
             
             choice = input("Select option: ").strip()
             
@@ -203,9 +205,20 @@ class RealEstateCLI:
                 self.get_all_listings()
                 self.save_listings_to_Explorer()
 
-            elif choice in ["3", "4"]:
-                print("\nFeature coming soon!")
+            elif choice == "3":
+                try:
+                    from feedbck_system import FeedbackSystem
+                    feedback_cli = FeedbackSystem(self.current_user_id)
+                    feedback_cli.review_menu()
+                except Exception as e:
+                    print(f"Failed to launch feedback system: {e}")
+            elif choice == "4":
+                explorer = Explorer()
+                explorer.get_properties(self.current_user_id)
+                explorer.menu(self.current_user_id)  
             elif choice == "5":
+                self.display_user_details()    
+            elif choice == "6":
                 self.current_user = None
                 self.current_user_id = None
                 self.is_agent = False
@@ -214,32 +227,7 @@ class RealEstateCLI:
                 print("Invalid option. Please try again.")
 
 
-    def create_listing(self, user_id , title, description, price, property_type, bedrooms, bathrooms, square_feet, address, location):
-        try:
-            with self.conn.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO listings (
-                        id, user_id, title, description, price, property_type, 
-                        bedrooms, bathrooms, square_feet, address, location, created_at, updated_at
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, ST_GeogFromText(%s), %s, %s)
-                    RETURNING id;
-                    """,
-                    (
-                        str(uuid.uuid4()), user_id, title, description, price, property_type,
-                        bedrooms, bathrooms, square_feet, json.dumps(address),
-                        location,
-                        datetime.utcnow(), datetime.utcnow()
-                    )
-                )
-                listing_id = cur.fetchone()[0]
-                self.conn.commit()
-                print(f"\nListing created with ID: {listing_id}")
-                return listing_id
-        except psycopg2.Error as e:
-            self.conn.rollback()
-            print(f"\nDatabase Error: {e}")
-            return None
+    
 
     def get_all_listings(self):
         try:
@@ -348,11 +336,15 @@ class RealEstateCLI:
                     continue
                 
                 address = self.get_address_input() 
-                location = self.get_location_input() 
+                location = self.get_location_input()
+                if not location:
+                    print("Location is required to create a listing.")
+                    continue 
             
                 confirm = input("Create this listing? (y/n): ").lower()
                 if confirm == 'y':
-                    listing_id = self.create_listing(
+                    Listing_manager = ListingManager()
+                    listing_id = Listing_manager.create_listing(
                     user_id=self.current_user_id,  
                     title=title,
                     description=description,
@@ -370,7 +362,7 @@ class RealEstateCLI:
                     print("Listing creation cancelled")
 
             elif choice == "2":
-                print("\nFeature coming soon!")
+                self.display_agency_listings()
             elif choice == "3":
                 try:
                     from chatsystem import ChatSystem  
@@ -415,19 +407,62 @@ class RealEstateCLI:
         except psycopg2.Error as e:
             print(f"Database error: {e}")
 
+    def display_user_details(self):
+        print("\n=== User details ===")
+        try:
+            with self.conn.cursor() as cur: 
+                cur.execute( 
+                """
+                SELECT username, email, phone, password_hash, is_agent, created_at, last_active
+                FROM users
+                WHERE id = %s
+                """,
+                (self.current_user_id,)  
+                )
+                result = cur.fetchone()
+                if result:
+                    fields = ["username", "email", "phone", "password_hash", "is_agent", "created_at", "last_active"]
+                    for field, value in zip(fields, result):
+                        print(f"{field}: {value}")
+                else:
+                    print("No user details found!")
+        except psycopg2.Error as e:
+            print(f"Database error: {e}")
 
-
+    
     def get_location_input(self):
         """Helper method to get location coordinates"""
         while True:
-            coords = input("Enter coordinates as 'latitude,longitude' (optional): ").strip()
-            if not coords:
+            coords = input("Enter coordinates as 'latitude,longitude' (required): ").strip()
+            if  coords:
+                try:
+                    lat, lng = map(float, coords.split(','))
+                    return {'lat': lat, 'lng': lng}
+                except ValueError:
+                    print("Invalid format. Please enter like: -1.286389,36.817223")
+            else:
                 return None
-        try:
-            lat, lng = map(float, coords.split(','))
-            return {'lat': lat, 'lng': lng}
-        except ValueError:
-            print("Invalid format. Please enter like: -1.286389,36.817223")
+    def display_agency_listings(self):
+         print("\n=== My agency listings ===")
+         with self.conn.cursor() as cur:
+            try:
+                cur.execute(
+                """SELECT id, title, description, price , property_type, bedrooms, bathrooms, square_feet, adDress, location, status, created_at, updated_at
+                FROM listings where user_id =%s
+                """,
+                (self.current_user_id,)
+                )
+                results = cur.fetchall()
+                if results:
+                    for listing in results:
+                        print("\n--- Listing ---")
+                        fields = ["id", "title", "description", "price", "property_type", "bedrooms", "bathrooms", "square_feet", "address", "location", "status", "created_at", "updated_at"]
+                        for field, value in zip(fields, results):
+                            print(f"{field}: {value}")
+                else:
+                    print("No listings  found!")
+            except psycopg2.Error as e:
+                print(f"Database Error: {e}")
 
     def get_address_input(self):
         print("Please enter the property address:")

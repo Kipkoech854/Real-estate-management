@@ -204,3 +204,6 @@ def send_message(self, user_id, chat_id, sender_id, message, attachments=None):
          print("\n=== chats ===")
          list_user_chats(self.current_user_id)
          openchat = input("open chat : ").strip()
+         conver
+         if input:
+            get_chat_messages()
