@@ -1,6 +1,16 @@
--- Enable required extensions
+-- Load extensions first
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE EXTENSION IF NOT EXISTS "postgis";
+DROP TABLE IF EXISTS reviews;
+
+DROP TABLE IF EXISTS chats;
+DROP TABLE IF EXISTS conversations;
+DROP TABLE IF EXISTS saved_listings;
+DROP TABLE IF EXISTS listing_media;
+DROP TABLE IF EXISTS listings;
+DROP TABLE IF EXISTS agencies;
+DROP TABLE IF EXISTS users;
 
 -- Core tables
 CREATE TABLE users (
@@ -64,37 +74,31 @@ CREATE TABLE saved_listings (
     UNIQUE(user_id, listing_id)
 );
 
--- Chats system
-CREATE TABLE saved_listing_chats (
+-- Conversations system
+CREATE TABLE conversations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    saved_listing_id UUID NOT NULL REFERENCES saved_listings(id) ON DELETE CASCADE,
-    sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    message TEXT NOT NULL,
-    attachments JSONB,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    participant_1 UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    participant_2 UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE (participant_1, participant_2)
 );
 
-ALTER TABLE saved_listings 
-ADD COLUMN active_chat_id UUID REFERENCES saved_listing_chats(id) ON DELETE SET NULL;
-
--- Agency chats
-CREATE TABLE agency_chats (
+-- Chats table
+CREATE TABLE chats (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    agency_id UUID NOT NULL REFERENCES agencies(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    last_message_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE agency_chat_messages (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    chat_id UUID NOT NULL REFERENCES agency_chats(id) ON DELETE CASCADE,
+    conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
     sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     message TEXT NOT NULL,
     attachments JSONB,
     read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Saved listing chats (different from conversation chats)
+
+
+-- Add the active_chat_id column after saved_listing_chats exists
+ALTER TABLE saved_listings 
+ADD COLUMN active_chat_id UUID REFERENCES saved_listing_chats(id) ON DELETE SET NULL;
 
 -- Reviews
 CREATE TABLE reviews (
@@ -107,13 +111,13 @@ CREATE TABLE reviews (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Indexes
+-- Create indexes
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_phone ON users(phone);
 CREATE INDEX idx_listings_price ON listings(price);
 CREATE INDEX idx_listings_property_type ON listings(property_type);
-CREATE INDEX idx_agency_chats_user ON agency_chats(user_id);
-CREATE INDEX idx_saved_chats_listing ON saved_listing_chats(saved_listing_id);
 
--- PostGIS index must be created after PostGIS extension is enabled
 CREATE INDEX idx_listings_location ON listings USING GIST(location);
+
+-- Remove this index as the table doesn't exist
+-- CREATE INDEX idx_agency_chats_user ON agency_chats(user_id);
