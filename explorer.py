@@ -140,4 +140,5 @@ class Explorer:
                 self.conn.close()
                 break
             else:
+
                 print("Invalid option. Try again.")
