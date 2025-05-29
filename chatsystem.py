@@ -62,7 +62,7 @@ class ChatSystem:
                 json.dumps(attachments) if attachments else None
             ))
             self.conn.commit()
-
+    
     def get_chat_messages(self, conversation_id):
         with self.conn.cursor() as cur:
             cur.execute("""
@@ -124,6 +124,7 @@ class ChatSystem:
                 else:
                     print("Invalid selection.")
     
+
     def run(self):
         self.cli_interface()
 

@@ -201,6 +201,7 @@ class RealEstateCLI:
                     self.register_agency()
             elif choice == "2":
                 self.get_all_listings()
+                self.save_listings_to_Explorer()
 
             elif choice in ["3", "4"]:
                 print("\nFeature coming soon!")
@@ -248,11 +249,47 @@ class RealEstateCLI:
                 print("\n=== Active Listings ===")
                 for l in listings:
                     print(f"ID: {l[0]} | Title: {l[1]} | Price: ${l[2]} | Type: {l[3]} | Status: {l[4]}")
+                    
                 return listings
         except psycopg2.Error as e:
             print(f"\nDatabase Error: {e}")
             return []        
+    
+    def save_listings_to_Explorer(self):
+        title = input("Enter title of listing to save it for further exploration: ").strip() or None
+        if not title:
+            print("Listing title is required.")
+            return
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute("SELECT id FROM listings WHERE title = %s", (title,))
+                result = cur.fetchone()
+                if not result:
+                    print("Listing not found.")
+                    return
 
+                listing_id = result[0]
+                
+                notes = input("Add any notes (optional): ").strip() or None
+                
+                cur.execute(
+                """
+                INSERT INTO saved_listings (id, user_id, listing_id, notes, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, NOW(), NOW())
+                ON CONFLICT (user_id, listing_id) DO UPDATE 
+                SET notes = EXCLUDED.notes, updated_at = NOW()
+                """,
+                (str(uuid.uuid4()), self.current_user_id, listing_id, notes)
+                )
+
+                self.conn.commit()
+                print("Listing saved for future exploration.")
+
+        except psycopg2.Error as e:
+            self.conn.rollback()
+            print(f"Database error: {e}")
+
+            
     def agency_menu(self):
         """Display agency menu"""
         while True:
@@ -261,11 +298,12 @@ class RealEstateCLI:
             print("2. View Existing Listings")
             print("3. Open Chat")
             print("4. Open reviews")
-            print("5. Back to Home")
+            print("5. View Agency details")
+            print("6. Back to Home")
 
             choice = input("Select option: ").strip()
         
-            if choice == "5":
+            if choice == "6":
                 break
             elif choice == "1":
                 print("\n=== create listing ===")
@@ -309,7 +347,7 @@ class RealEstateCLI:
                     print("Square feet must be a whole number")
                     continue
                 
-                address = self.get_address_input()  # Make sure this method exists
+                address = self.get_address_input() 
                 location = self.get_location_input() 
             
                 confirm = input("Create this listing? (y/n): ").lower()
@@ -347,9 +385,36 @@ class RealEstateCLI:
                     feedback_cli.review_menu()
                 except Exception as e:
                     print(f"Failed to launch feedback system: {e}")
-
+            elif choice == "5":
+                self.display_agency_details()
             else:
                 print("Invalid option. Please try again.")
+
+
+    def display_agency_details(self):
+        print("\n=== My Agency ===")
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(
+                """
+                SELECT name, license_number, bio, verified, profile_image_url, created_at
+                FROM agencies
+                WHERE user_id = %s
+                """,
+                (self.current_user_id,)
+                )
+                result = cur.fetchone()
+
+                if result:
+                    fields = ["Name", "License Number", "Bio", "Verified", "Profile Image", "Created At"]
+                    for field, value in zip(fields, result):
+                        print(f"{field}: {value}")
+                else:
+                    print("No agency details found.")
+    
+        except psycopg2.Error as e:
+            print(f"Database error: {e}")
+
 
 
     def get_location_input(self):
