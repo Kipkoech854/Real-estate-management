@@ -12,25 +12,31 @@ PROPERTY_TYPES = ['house', 'apartment', 'land', 'commercial']
 def get_connection():
     return psycopg2.connect(DB_URL, cursor_factory=RealDictCursor)
 
-def list_properties(conn, filters):
-    query = "SELECT id, title, price, property_type, bedrooms, bathrooms FROM listings WHERE status = 'active'"
-    params = []
+def list_properties(conn, current_user_id, filters):
+    query = '''
+        SELECT listings.id, listings.title, listings.price, listings.property_type, 
+               listings.bedrooms, listings.bathrooms
+        FROM listings
+        JOIN saved_listings ON listings.id = saved_listings.listing_id
+        WHERE saved_listings.user_id = %s
+    '''
+    params = [current_user_id]
     if 'price_min' in filters and filters['price_min']:
-        query = query + " AND price >= %s"
+        query += " AND listings.price >= %s"
         params.append(filters['price_min'])
     if 'price_max' in filters and filters['price_max']:
-        query = query + " AND price <= %s"
+        query += " AND listings.price <= %s"
         params.append(filters['price_max'])
     if 'property_type' in filters and filters['property_type']:
-        query = query + " AND property_type = %s"
+        query += " AND listings.property_type = %s"
         params.append(filters['property_type'])
     if 'bedrooms' in filters and filters['bedrooms']:
-        query = query + " AND bedrooms >= %s"
+        query += " AND listings.bedrooms >= %s"
         params.append(filters['bedrooms'])
     if 'bathrooms' in filters and filters['bathrooms']:
-        query = query + " AND bathrooms >= %s"
+        query += " AND listings.bathrooms >= %s"
         params.append(filters['bathrooms'])
-    query = query + " ORDER BY created_at DESC LIMIT 20"
+    query += " ORDER BY listings.created_at DESC LIMIT 20"
     cur = conn.cursor()
     cur.execute(query, params)
     return cur.fetchall()
@@ -76,7 +82,7 @@ def input_filters():
         filters['bathrooms'] = float(bathrooms)
     return filters
 
-def explorer_menu():
+def explorer_menu(current_user_id):
     conn = get_connection()
     filters = {}
     while True:
@@ -88,7 +94,7 @@ def explorer_menu():
         print("4. Exit")
         choice = input("Select option: ")
         if choice == '1':
-            properties = list_properties(conn, filters)
+            properties = list_properties(conn, current_user_id, filters)
             if not properties:
                 print("No listings found.")
             else:
@@ -111,4 +117,4 @@ def explorer_menu():
             print("Invalid option.")
 
 if __name__ == '__main__':
-    explorer_menu() 
+    print("Example: explorer_menu('user-uuid-here')") 
