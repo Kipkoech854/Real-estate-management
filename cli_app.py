@@ -1,3 +1,4 @@
+
 import psycopg2
 import bcrypt
 import getpass
@@ -346,6 +347,7 @@ class RealEstateCLI:
                     Listing_manager = ListingManager()
                     listing_id = Listing_manager.create_listing(
                     user_id=self.current_user_id,  
+
                     title=title,
                     description=description,
                     price=price,
@@ -358,8 +360,11 @@ class RealEstateCLI:
                 )
                 if listing_id:
                     print("Listing created successfully!")
+                    manager.fetch_user_listings(user_id)
                 else:
-                    print("Listing creation cancelled")
+                    print("Listing creation failed")
+
+      
 
             elif choice == "2":
                 self.display_agency_listings()
@@ -518,3 +523,4 @@ class RealEstateCLI:
 if __name__ == "__main__":
     app = RealEstateCLI()
     app.run()
+
