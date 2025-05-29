@@ -1,5 +1,3 @@
-import os
-DB_URL = os.getenv("DATABASE_URL")
 import psycopg2
 import uuid
 from datetime import datetime
@@ -12,11 +10,12 @@ load_dotenv()
 class ListingManager:
     def __init__(self):
         self.conn = psycopg2.connect(
-            host=os.getenv("DB_HOST"),
-            database=os.getenv("DB_NAME"),
+            dbname=os.getenv("DB_NAME"),
             user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASS"),
-            sslmode="require"
+            password=os.getenv("DB_PASSWORD") or os.getenv("DB_PASS"),  # Handles both versions
+            host=os.getenv("DB_HOST"),
+            port=os.getenv("DB_PORT"),
+            sslmode="require" if os.getenv("DB_SSL") == "true" else None
         )
 
     def create_user(self, username, email, password_hash, phone=None, is_agent=False):
@@ -39,7 +38,18 @@ class ListingManager:
             print(f"User Creation Error: {e}")
             return None
 
-    def create_listing(self, user_id , title, description, price, property_type, bedrooms, bathrooms, square_feet, address, location):
+    def get_user_id_by_username(self, username):
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute("SELECT id FROM users WHERE username = %s", (username,))
+                result = cur.fetchone()
+                return result[0] if result else None
+        except psycopg2.Error as e:
+            print(f"Error fetching user: {e}")
+            return None
+
+    def create_listing(self, user_id, title, description, price, property_type,
+                      bedrooms, bathrooms, square_feet, address, location):
         try:
             with self.conn.cursor() as cur:
                 cur.execute(
@@ -79,6 +89,42 @@ class ListingManager:
             print(f"\nDatabase Error: {e}")
             return []
 
+    def fetch_user_listings(self, user_id):
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute("""
+                    SELECT id, title, price, property_type, status
+                    FROM listings
+                    WHERE user_id = %s
+                """, (user_id,))
+                listings = cur.fetchall()
+                print("\n=== Your Listings ===")
+                for l in listings:
+                    print(f"ID: {l[0]} | Title: {l[1]} | Price: ${l[2]} | Type: {l[3]} | Status: {l[4]}")
+                return listings
+        except psycopg2.Error as e:
+            print(f"Error fetching user's listings: {e}")
+            return []
+
+    def get_address_input(self):
+        print("\nEnter Address Info:")
+        return {
+            "street": input("Street: ").strip(),
+            "city": input("City: ").strip(),
+            "state": input("State: ").strip(),
+            "zip": input("ZIP: ").strip(),
+        }
+
+    def get_location_input(self):
+        print("\nEnter Coordinates:")
+        lat = input("Latitude: ").strip()
+        lng = input("Longitude: ").strip()
+        try:
+            return {"lat": float(lat), "lng": float(lng)}
+        except ValueError:
+            print("Invalid coordinates. Setting to 0, 0.")
+            return {"lat": 0.0, "lng": 0.0}
+
     def close(self):
         self.conn.close()
 
@@ -86,37 +132,4 @@ class ListingManager:
 if __name__ == "__main__":
     manager = ListingManager()
 
-    user_id = manager.create_user(
-        username="exampleuser",
-        email="example@example.com",
-        password_hash="hashed_password_here",
-        phone="555-1234",
-        is_agent=False
-    )
-
-    if user_id:
-        manager.create_listing(
-            user_id=user_id,
-            title="Modern Downtown Apartment",
-            description="2 bed, 1.5 bath near Embarcadero with great amenities.",
-            price=4500.00,
-            property_type="apartment",
-            bedrooms=2,
-            bathrooms=1.5,
-            square_feet=950,
-            address={
-                "street": "123 Market St",
-                "city": "Nairobi",
-                "county": "Nairobi"
-            },
-            location={"lat": 37.7955, "lng": -122.3937}
-        )
-
-        manager.get_all_listings()
-
-    manager.close()
-
-if __name__ == '__main__':
-    Real_estate.run()
-
-
+   
