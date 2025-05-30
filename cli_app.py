@@ -28,6 +28,7 @@ class RealEstateCLI:
         self.current_user = None
         self.current_user_id = None
         self.is_agent = False
+        
 
     def _hash_password(self, password):
         """Securely hash password using bcrypt"""
@@ -71,20 +72,20 @@ class RealEstateCLI:
         print("\n=== Create New Account ===")
         
         while True:
-            username = input("Username: ").strip()
+            username = input("👤Username: ").strip()
             if not self._check_username_exists(username):
                 break
-            print("\nUsername already taken. Please try another.")
+            print("\n⚠️Username already taken. Please try another.")
         
-        email = input("Email (optional): ").strip() or None
-        phone = input("Phone (optional): ").strip() or None
+        email = input("📧Email (optional): ").strip() or None
+        phone = input("📞Phone (optional): ").strip() or None
         
         while True:
-            password = getpass.getpass("Password: ")
-            confirm = getpass.getpass("Confirm Password: ")
+            password = getpass.getpass("🔒Password: ")
+            confirm = getpass.getpass("🔒Confirm Password: ")
             if password == confirm:
                 break
-            print("\nError: Passwords don't match!")
+            print("\nError: ⚠️Passwords don't match!")
         
         is_agent = input("Are you registering as an agent? (y/n): ").lower() == 'y'
         
@@ -105,22 +106,22 @@ class RealEstateCLI:
                     )
                 )
                 self.conn.commit()
-                print("\nAccount created successfully!")
+                print("\n✅Account created successfully!")
                 self.current_user = username
                 self.current_user_id = user_id
                 self.is_agent = is_agent
                 return True
         except psycopg2.Error as e:
             self.conn.rollback()
-            print(f"\nDatabase Error: {e}")
+            print(f"\n❌Database Error: {e}")
             return False
 
     def login(self):
         """Handle user login"""
         print("\n=== Login to Your Account ===")
         
-        username = input("Username: ").strip()
-        password = getpass.getpass("Password: ")
+        username = input("👤Username: ").strip()
+        password = getpass.getpass("🔒Password: ")
         
         user_id, is_agent = self._verify_credentials(username, password)
         if user_id:
@@ -130,13 +131,13 @@ class RealEstateCLI:
             self.is_agent = is_agent
             return True
         else:
-            print("\nInvalid username or password")
+            print("\n⚠️Invalid username or password")
             return False
 
     def register_agency(self):
         """Register a new agency"""
         if not self.current_user_id:
-            print("\nPlease login first")
+            print("\n⚠️Please login first")
             return
         
         print("\n=== Register New Agency ===")
@@ -145,7 +146,7 @@ class RealEstateCLI:
             name = input("Agency Name: ").strip()
             if not self._check_agency_exists(name):
                 break
-            print("\nAn agency with this name already exists. Please try another.")
+            print("\n⚠️An agency with this name already exists. Please try another.")
         
         bio = input("Bio : ").strip() 
         profile_image_url = input("Profile Image *URL : ").strip() 
@@ -166,11 +167,11 @@ class RealEstateCLI:
                     )
                 )
                 self.conn.commit()
-                print("\nAgency registered successfully!")
+                print("\n✅Agency registered successfully!")
                 return True
         except psycopg2.Error as e:
             self.conn.rollback()
-            print(f"\nDatabase Error: {e}")
+            print(f"\n ❌Database Error: {e}")
             return False
 
     def has_agency(self):
@@ -187,13 +188,17 @@ class RealEstateCLI:
     def home_menu(self):
         """Display home menu after login/registration"""
         while True:
-            print("\n=== HOME ===")
-            print("1. Register Agency" if not self.has_agency() else "1. Go to Agency")
-            print("2. See Listings")
-            print("3. Open Ratings")
-            print("4. Open Explorer")
-            print("5. Display user details")
-            print("6. Logout")
+            print("\n" + "=" * 40)
+            print("🏠   HOME")
+            print("=" * 40)
+
+            print("1. 🏢 " + ("Register Agency" if not self.has_agency() else "Go to Agency"))
+            print("2. 🏘️  See Listings")
+            print("3. ⭐ Open Ratings")
+            print("4. 🧭 Open Explorer")
+            print("5. 👤 Display User Details")
+            print("6. 🚪 Logout")
+
             
             choice = input("Select option: ").strip()
             
@@ -212,7 +217,7 @@ class RealEstateCLI:
                     feedback_cli = FeedbackSystem(self.current_user_id)
                     feedback_cli.review_menu()
                 except Exception as e:
-                    print(f"Failed to launch feedback system: {e}")
+                    print(f"⚠️Failed to launch feedback system: {e}")
             elif choice == "4":
                 explorer = Explorer()
                 explorer.get_properties(self.current_user_id)
@@ -225,29 +230,42 @@ class RealEstateCLI:
                 self.is_agent = False
                 break
             else:
-                print("Invalid option. Please try again.")
+                print("⚠️Invalid option. Please try again.")
 
-
-    
 
     def get_all_listings(self):
         try:
             with self.conn.cursor() as cur:
-                cur.execute("SELECT id, title, price, property_type, status FROM listings WHERE status = 'active'")
+                cur.execute("""
+                SELECT id, title, price, property_type, status
+                FROM listings
+                WHERE status = 'active'
+                """)
                 listings = cur.fetchall()
-                print("\n=== Active Listings ===")
-                for l in listings:
-                    print(f"ID: {l[0]} | Title: {l[1]} | Price: ${l[2]} | Type: {l[3]} | Status: {l[4]}")
-                    
-                return listings
+
+                if listings:
+                    print("\n=== 🟢 Active Listings ===")
+                    for l in listings:
+                        print("\n" + "=" * 50)
+                        print(f"🆔 ID       : {l[0]}")
+                        print(f"🏷️  Title    : {l[1]}")
+                        print(f"💰 Price    : ${l[2]:,.2f}")
+                        print(f"🏘️  Type     : {l[3]}")
+                        print(f"📦 Status   : {l[4]}")
+                        print("=" * 50)
+                else:
+                    print("\n⚠️  No active listings available.")
+            
+            return listings
+
         except psycopg2.Error as e:
-            print(f"\nDatabase Error: {e}")
-            return []        
-    
+            print(f"\n❌ Database Error: {e}")
+            return []
+
     def save_listings_to_Explorer(self):
         title = input("Enter title of listing to save it for further exploration: ").strip() or None
         if not title:
-            print("Listing title is required.")
+            print("⚠️Listing title is required.")
             return
         try:
             with self.conn.cursor() as cur:
@@ -272,23 +290,26 @@ class RealEstateCLI:
                 )
 
                 self.conn.commit()
-                print("Listing saved for future exploration.")
+                print("✅Listing saved for future exploration.")
 
         except psycopg2.Error as e:
             self.conn.rollback()
-            print(f"Database error: {e}")
+            print(f"❌Database error: {e}")
 
             
     def agency_menu(self):
         """Display agency menu"""
         while True:
-            print("\n=== AGENCY ===")
-            print("1. Make New Listing")
-            print("2. View Existing Listings")
-            print("3. Open Chat")
-            print("4. Open reviews")
-            print("5. View Agency details")
-            print("6. Back to Home")
+            print("\n" + "=" * 40)
+            print("🏢  AGENCY DASHBOARD")
+            print("=" * 40)
+
+            print("1. 📝 Make New Listing")
+            print("2. 📂 View Existing Listings")
+            print("3. 💬 Open Chat")
+            print("4. 🗒️  Open Reviews")
+            print("5. 🧾 View Agency Details")
+            print("6. 🔙 Back to Home")
 
             choice = input("Select option: ").strip()
         
@@ -298,7 +319,7 @@ class RealEstateCLI:
                 print("\n=== create listing ===")
                 title = input("Title (required): ").strip()
                 if not title:
-                    print('Title must be filled!')
+                    print('⚠️Title must be filled!')
                     continue
                 
                 description = input("Description: ").strip() or None
@@ -307,39 +328,39 @@ class RealEstateCLI:
                     try:
                         price = float(price)
                     except ValueError:
-                        print("Invalid price - must be a number")
+                        print("⚠️Invalid price - must be a number")
                         continue
                     
                 property_type = input("Property type [house/apartment/land/commercial]: ").strip().lower()
                 if property_type not in ['house', 'apartment', 'land', 'commercial']:
-                    print("Invalid property type")
+                    print("⚠️Invalid property type")
                     continue
                 
                 bedrooms = input("Bedrooms: ").strip()
                 try:
                     bedrooms = int(bedrooms) if bedrooms else None
                 except ValueError:
-                    print("Bedrooms must be a whole number")
+                    print("⚠️Bedrooms must be a whole number")
                     continue
                 
                 bathrooms = input("Bathrooms: ").strip()
                 try:
                     bathrooms = float(bathrooms) if bathrooms else None
                 except ValueError:
-                    print("Bathrooms must be a number")
+                    print("⚠️Bathrooms must be a number")
                     continue
                 
                 square_feet = input("Square feet: ").strip()
                 try:
                     square_feet = int(square_feet) if square_feet else None
                 except ValueError:
-                    print("Square feet must be a whole number")
+                    print("⚠️Square feet must be a whole number")
                     continue
                 
                 address = self.get_address_input() 
                 location = self.get_location_input()
                 if not location:
-                    print("Location is required to create a listing.")
+                    print("⚠️Location is required to create a listing.")
                     continue 
             
                 confirm = input("Create this listing? (y/n): ").lower()
@@ -359,10 +380,10 @@ class RealEstateCLI:
                     location=location
                 )
                 if listing_id:
-                    print("Listing created successfully!")
-                    manager.fetch_user_listings(user_id)
+                    print("✅Listing created successfully!")
+                    Listing_manager.fetch_user_listings(self.current_user_id)
                 else:
-                    print("Listing creation failed")
+                    print("⚠️Listing creation failed")
 
       
 
@@ -374,22 +395,24 @@ class RealEstateCLI:
                     chat_app = ChatSystem(self.conn, self.current_user_id)
                     chat_app.cli_interface()  
                 except Exception as e:
-                    print(f"Failed to launch chat system: {e}")
+                    print(f"⚠️Failed to launch chat system: {e}")
             elif choice == "4":
                 try:
                     from feedbck_system import FeedbackSystem
                     feedback_cli = FeedbackSystem(self.current_user_id)
                     feedback_cli.review_menu()
                 except Exception as e:
-                    print(f"Failed to launch feedback system: {e}")
+                    print(f"⚠️Failed to launch feedback system: {e}")
             elif choice == "5":
                 self.display_agency_details()
             else:
-                print("Invalid option. Please try again.")
+                print("⚠️Invalid option. Please try again.")
 
 
     def display_agency_details(self):
-        print("\n=== My Agency ===")
+        print("\n" + "=" * 40)
+        print("🏢  MY AGENCY DETAILS")
+        print("=" * 40)
         try:
             with self.conn.cursor() as cur:
                 cur.execute(
@@ -401,38 +424,54 @@ class RealEstateCLI:
                 (self.current_user_id,)
                 )
                 result = cur.fetchone()
-
                 if result:
-                    fields = ["Name", "License Number", "Bio", "Verified", "Profile Image", "Created At"]
-                    for field, value in zip(fields, result):
-                        print(f"{field}: {value}")
+                    fields = [
+                    ("🏷️  Name", result[0]),
+                    ("🆔 License Number", result[1]),
+                    ("📝 Bio", result[2]),
+                    ("✅ Verified", "Yes" if result[3] else "No"),
+                    ("🖼️  Profile Image URL", result[4] or "N/A"),
+                    ("📅 Created At", result[5].strftime("%Y-%m-%d %H:%M:%S"))
+                    ]
+                    for label, value in fields:
+                        print(f"{label}: {value}")
                 else:
-                    print("No agency details found.")
-    
+                    print("⚠️  No agency details found.")
         except psycopg2.Error as e:
-            print(f"Database error: {e}")
+            print(f"❌ Database error: {e}")
+
 
     def display_user_details(self):
-        print("\n=== User details ===")
+        print("\n" + "=" * 40)
+        print("👤  USER DETAILS")
+        print("=" * 40)
         try:
-            with self.conn.cursor() as cur: 
-                cur.execute( 
+            with self.conn.cursor() as cur:
+                cur.execute(
                 """
                 SELECT username, email, phone, password_hash, is_agent, created_at, last_active
                 FROM users
                 WHERE id = %s
                 """,
-                (self.current_user_id,)  
+                (self.current_user_id,)
                 )
                 result = cur.fetchone()
                 if result:
-                    fields = ["username", "email", "phone", "password_hash", "is_agent", "created_at", "last_active"]
-                    for field, value in zip(fields, result):
-                        print(f"{field}: {value}")
+                    fields = [
+                    ("👤 Username", result[0]),
+                    ("📧 Email", result[1]),
+                    ("📞 Phone", result[2] or "N/A"),
+                    ("🔒 Password Hash", result[3][:10] + "..." if result[3] else "N/A"),
+                    ("🧑‍💼 Is Agent", "Yes" if result[4] else "No"),
+                    ("📅 Created At", result[5].strftime("%Y-%m-%d %H:%M:%S")),
+                    ("⏰ Last Active", result[6].strftime("%Y-%m-%d %H:%M:%S"))]
+                    
+                    for label, value in fields:
+                        print(f"{label}: {value}")
                 else:
-                    print("No user details found!")
+                    print("⚠️  No user details found!")
         except psycopg2.Error as e:
-            print(f"Database error: {e}")
+            print(f"❌ Database error: {e}")
 
     
     def get_location_input(self):
@@ -447,27 +486,45 @@ class RealEstateCLI:
                     print("Invalid format. Please enter like: -1.286389,36.817223")
             else:
                 return None
+
     def display_agency_listings(self):
-         print("\n=== My agency listings ===")
-         with self.conn.cursor() as cur:
+        print("\n=== 🏢 My Agency Listings ===")
+        with self.conn.cursor() as cur:
             try:
                 cur.execute(
-                """SELECT id, title, description, price , property_type, bedrooms, bathrooms, square_feet, adDress, location, status, created_at, updated_at
-                FROM listings where user_id =%s
+                """
+                SELECT id, title, description, price, property_type, bedrooms, bathrooms,
+                       square_feet, address, location, status, created_at, updated_at
+                FROM listings
+                WHERE user_id = %s
                 """,
                 (self.current_user_id,)
                 )
                 results = cur.fetchall()
+
                 if results:
                     for listing in results:
-                        print("\n--- Listing ---")
-                        fields = ["id", "title", "description", "price", "property_type", "bedrooms", "bathrooms", "square_feet", "address", "location", "status", "created_at", "updated_at"]
-                        for field, value in zip(fields, results):
-                            print(f"{field}: {value}")
+                        print("\n" + "=" * 60)
+                        print("📝 Listing ID:", listing[0])
+                        print("-" * 60)
+                        print(f"📌 Title       : {listing[1]}")
+                        print(f"🧾 Description : {listing[2]}")
+                        print(f"💲 Price       : ${listing[3]:,.2f}")
+                        print(f"🏠 Type        : {listing[4]}")
+                        print(f"🛏️  Bedrooms   : {listing[5]}")
+                        print(f"🛁 Bathrooms  : {listing[6]}")
+                        print(f"📐 Area        : {listing[7]} sqft")
+                        print(f"📍 Address     : {listing[8]}")
+                        print(f"🌐 Location    : {listing[9]}")
+                        print(f"📦 Status      : {listing[10]}")
+                        print(f"🕒 Created At  : {listing[11]}")
+                        print(f"🕓 Updated At  : {listing[12]}")
+                        print("=" * 60)
                 else:
-                    print("No listings  found!")
+                    print("⚠️  No listings found.")
             except psycopg2.Error as e:
-                print(f"Database Error: {e}")
+                print(f" Database Error: {e}")
+
 
     def get_address_input(self):
         print("Please enter the property address:")

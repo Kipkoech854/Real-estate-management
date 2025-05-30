@@ -11,10 +11,10 @@ def mark_messages_read(self, chat_id, user_id):
                 (chat_id, user_id)
             )
             self.conn.commit()
-            print("Messages marked as read.")
+            print("✅Messages marked as read.")
     except psycopg2.Error as e:
         self.conn.rollback()
-        print(f"Database Error: {e}")
+        print(f"❌Database Error: {e}")
 
 
 def chat_interface(self, current_user_id):
@@ -53,7 +53,7 @@ def get_chat_messages(self, chat_id):
             )
             return cur.fetchall()
     except psycopg2.Error as e:
-        print(f"Database Error: {e}")
+        print(f"❌Database Error: {e}")
         return []
 
 for msg in self.get_chat_messages(chat_id):
@@ -86,11 +86,11 @@ def send_message(self, user_id, chat_id, sender_id, message, attachments=None):
                 )
             )
             self.conn.commit()
-            print("Message sent successfully.")
+            print("✅Message sent successfully.")
             return True
     except psycopg2.Error as e:
         self.conn.rollback()
-        print(f"Database Error: {e}")
+        print(f"❌Database Error: {e}")
         return False
 
 

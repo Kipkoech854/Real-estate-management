@@ -13,7 +13,7 @@ class ListingManager:
         self.conn = psycopg2.connect(
             dbname=os.getenv("DB_NAME"),
             user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
+            password=os.getenv("DB_PASS"),
             host=os.getenv("DB_HOST"),
             port=os.getenv("DB_PORT")
         )
@@ -60,16 +60,26 @@ class ListingManager:
         try:
             with self.conn.cursor() as cur:
                 cur.execute("""
-                    SELECT id, title, price, property_type, status
-                    FROM listings
-                    WHERE user_id = %s
+                SELECT id, title, price, property_type, status
+                FROM listings
+                WHERE user_id = %s
                 """, (user_id,))
                 listings = cur.fetchall()
-                print("\n=== Your Listings ===")
-                for l in listings:
-                    print(f"ID: {l[0]} | Title: {l[1]} | Price: ${l[2]} | Type: {l[3]} | Status: {l[4]}")
+
+                if listings:
+                    print("\n=== 📋 Your Listings ===")
+                    for l in listings:
+                        print("\n" + "-" * 50)
+                        print(f"🆔 ID       : {l[0]}")
+                        print(f"🏷️  Title    : {l[1]}")
+                        print(f"💰 Price    : ${l[2]:,.2f}")
+                        print(f"🏘️  Type     : {l[3]}")
+                        print(f"📦 Status   : {l[4]}")
+                        print("-" * 50)
+                else:
+                    print("\n⚠️  No listings found for this user.")
         except psycopg2.Error as e:
-            print(f"Error fetching user's listings: {e}")
+            print(f"❌ Error fetching user's listings: {e}")
 
     def get_address_input(self):
         print("\nEnter Address Info:")
