@@ -225,10 +225,12 @@ class RealEstateCLI:
             elif choice == "5":
                 self.display_user_details()    
             elif choice == "6":
-                self.current_user = None
-                self.current_user_id = None
-                self.is_agent = False
-                break
+                confirm = input("Are you sure you want to logout? (y/n): ").lower()
+                if confirm == 'y':
+                    self.current_user = None
+                    self.current_user_id = None
+                    self.is_agent = False
+                    break
             else:
                 print("⚠️Invalid option. Please try again.")
 
@@ -461,7 +463,7 @@ class RealEstateCLI:
                     ("👤 Username", result[0]),
                     ("📧 Email", result[1]),
                     ("📞 Phone", result[2] or "N/A"),
-                    ("🔒 Password Hash", result[3][:10] + "..." if result[3] else "N/A"),
+                    ("🔒 Password Hash","[hidden]" result[3][:10] + "..." if result[3] else "N/A"),
                     ("🧑‍💼 Is Agent", "Yes" if result[4] else "No"),
                     ("📅 Created At", result[5].strftime("%Y-%m-%d %H:%M:%S")),
                     ("⏰ Last Active", result[6].strftime("%Y-%m-%d %H:%M:%S"))]

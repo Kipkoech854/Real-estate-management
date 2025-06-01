@@ -11,6 +11,7 @@ class ChatSystem:
         self.current_user_id = current_user_id
 
     def list_user_chats(self):
+        """this is a function to load chats of a particular user"""
         with self.conn.cursor() as cur:
             cur.execute("""
                 SELECT c.id, u1.username AS contact_name
@@ -23,6 +24,7 @@ class ChatSystem:
             return cur.fetchall()  # [(conversation_id, contact_name), ...]
 
     def get_or_create_conversation(self, user1_id, user2_username):
+        """this is a function to initialize or get a conversation instance from the database"""
         with self.conn.cursor() as cur:
             cur.execute("SELECT id FROM users WHERE username = %s", (user2_username,))
             row = cur.fetchone()
@@ -49,6 +51,7 @@ class ChatSystem:
             return conversation_id
 
     def send_message(self, conversation_id, sender_id, message, attachments=None):
+        """this is the function that sends the message typed in by the user"""
         with self.conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO chats (
@@ -64,6 +67,7 @@ class ChatSystem:
             self.conn.commit()
     
     def get_chat_messages(self, conversation_id):
+        """this is a function to get all chats with all the other people the user has"""
         with self.conn.cursor() as cur:
             cur.execute("""
                 SELECT u.username, c.message, c.created_at
@@ -76,6 +80,7 @@ class ChatSystem:
             return chats
 
     def cli_interface(self):
+        """this is a function to run the user interface"""
         while True:
             print("\n=== Your Conversations ===")
             chats = self.list_user_chats()
