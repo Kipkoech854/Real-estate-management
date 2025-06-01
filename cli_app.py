@@ -463,7 +463,9 @@ class RealEstateCLI:
                     ("👤 Username", result[0]),
                     ("📧 Email", result[1]),
                     ("📞 Phone", result[2] or "N/A"),
-                    ("🔒 Password Hash","[hidden]" result[3][:10] + "..." if result[3] else "N/A"),
+
+                    ("🔒 Password Hash","[hidden]" + (result[3][:10] + "..." if result[3] else "N/A")),
+
                     ("🧑‍💼 Is Agent", "Yes" if result[4] else "No"),
                     ("📅 Created At", result[5].strftime("%Y-%m-%d %H:%M:%S")),
                     ("⏰ Last Active", result[6].strftime("%Y-%m-%d %H:%M:%S"))]
