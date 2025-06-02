@@ -118,7 +118,8 @@ class Explorer:
             print("2. Set Filters")
             print("3. View Listing Details")
             print("4. View Saved Listings")
-            print("5. Exit")
+            print("5. open chat")
+            print("6. Exit")
             choice = input("Select option: ")
             if choice == '1':
                 properties = self._list_properties(user_id, filters)
@@ -136,6 +137,13 @@ class Explorer:
             elif choice == '4':
                 self.get_properties(user_id)
             elif choice == '5':
+                try:
+                    from chatsystem import ChatSystem  
+                    chat_app = ChatSystem(self.conn, self.current_user_id)
+                    chat_app.cli_interface()  
+                except Exception as e:
+                    print(f"⚠️Failed to launch chat system: {e}")    
+            elif choice == '6':
                 print(" Goodbye!")
                 self.conn.close()
                 break
